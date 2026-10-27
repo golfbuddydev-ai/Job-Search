@@ -1,0 +1,17 @@
+# Never commit your Google key or any other credentials
+service_account.json
+*service_account*.json
+*.key
+.env
+.env.*
+
+# Your CV and generated CVs stay out of the repo
+*.pdf
+*.docx
+tailored_cvs/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

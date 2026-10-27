@@ -1,0 +1,60 @@
+name: 1 - Build profile from CV
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: job-search-agent
+  cancel-in-progress: false
+
+jobs:
+  build-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Skips quietly on a schedule if the secrets aren't set yet (e.g. in the
+      # original template repo), so nothing runs or costs anything until you
+      # finish setup. If you run it by hand without them, it tells you why.
+      - name: Check setup
+        id: check
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ] && [ -n "$GOOGLE_KEY" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "::notice::Setup not finished (secrets missing) -- skipping. See SETUP.md, step 5."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::ANTHROPIC_API_KEY and/or GOOGLE_SERVICE_ACCOUNT_JSON secret is missing. See SETUP.md, step 5."
+            exit 1
+          fi
+
+      - name: Check out repo
+        if: steps.check.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        if: steps.check.outputs.ready == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        if: steps.check.outputs.ready == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Write Google key file
+        if: steps.check.outputs.ready == 'true'
+        env:
+          GOOGLE_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: printf '%s' "$GOOGLE_KEY" > service_account.json
+
+      - name: Build profile from your CV
+        if: steps.check.outputs.ready == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_FILE: service_account.json
+        run: python parse_cv.py
