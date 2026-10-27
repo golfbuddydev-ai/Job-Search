@@ -159,7 +159,7 @@ Go to your repo's **Actions** tab. You'll see four workflows, numbered in the or
 | **1 - Build profile from CV** | Reads your CV Doc and fills the Master Profile tab | Run once. Takes about 1 minute. |
 | **2 - Interview round** | Adds 3 questions to the Interview Log tab | Answer them in the **Answer** column whenever you like |
 | **3 - Job search** | Finds and scores jobs into the Matches tab | Takes 5–15 minutes. Browse your matches. |
-| **4 - Tailor CVs** | Writes a CV for each match you marked **Y** in the **Apply?** column | Open the run → scroll to **Artifacts** → download |
+| **4 - Tailor CVs** | Writes a CV for each match you marked **Y** in the **Apply?** column | Open the run → scroll to **Artifacts** → download. **Read it before sending**: check nothing has been invented. |
 
 After that, it runs itself:
 

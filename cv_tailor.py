@@ -176,6 +176,9 @@ def main():
 
     print(f"Done. Wrote {done} tailored CV(s). Download them from this run's page, "
           "under 'Artifacts' at the bottom.")
+    if done:
+        print("IMPORTANT: read every CV before you send it. Check that every number, job "
+              "title, date and skill is really yours -- AI can still get details wrong.")
 
 
 if __name__ == "__main__":
