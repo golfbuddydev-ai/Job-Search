@@ -14,14 +14,13 @@ except the header row in the Master Profile tab, then run it again.
 
 import os
 import sys
-import json
 import datetime
 
 from anthropic import Anthropic
 
 import config
 import sheets_helper
-from claude_helper import extract_text
+from claude_helper import ask_json
 
 PROFILE_HEADER = ["Section", "Content", "Last Updated", "Source"]
 
@@ -59,14 +58,7 @@ Respond with ONLY a JSON array, no other text, in this shape:
 Create one "Experience - ..." entry per role held, with dates, scope, and any \
 metrics/achievements mentioned. Keep each content field concise but complete."""
 
-    response = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=4000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": cv_text}],
-    )
-    raw = extract_text(response).replace("```json", "").replace("```", "").strip()
-    return json.loads(raw)
+    return ask_json(client, system_prompt, cv_text, max_tokens=6000)
 
 
 def main():

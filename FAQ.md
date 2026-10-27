@@ -45,6 +45,7 @@ In `config.py`:
 - Lower `MAX_LISTINGS_TO_SCORE` (e.g. to 60).
 - Trim `CAREER_PAGES` to companies you genuinely want.
 - Make `RELEVANCE_KEYWORDS` tighter, so the free filter drops more.
+- Add words to `EXCLUDE_TITLE_WORDS` for job titles you'd never apply for.
 
 You can also run the job search once a week instead of twice: in `.github/workflows/3_job_search.yml`, change `1,4` in the cron line to just `1` (Mondays).
 
@@ -125,8 +126,8 @@ Yes. It works for any industry. The starter settings are for advertising and mar
 
 ### Too many weak matches, or too few?
 
-- **Too many:** raise `MIN_FIT_SCORE` (e.g. 7 → 8), or tighten your keywords.
-- **Too few:** lower it (e.g. 7 → 6), add keywords, add countries, or add companies to watch.
+- **Too many:** raise `MIN_FIT_SCORE` (e.g. 7 → 8), tighten your keywords, or add unwanted job title words to `EXCLUDE_TITLE_WORDS`.
+- **Too few:** lower it (e.g. 7 → 6), add keywords, add countries, or add companies to watch. If your own job title contains a word in `EXCLUDE_TITLE_WORDS` (e.g. you're a "Sales Engineer"), remove that word.
 
 Check the **All Checked** tab first. It shows what scored just below the line.
 
@@ -155,6 +156,8 @@ When a run fails (red ✗ in the Actions tab), click the run, then the failed st
 | `Your CV came back empty or very short` | Your Doc has the CV as an image or an attached file. Paste it in as text. |
 | `Your Master Profile is empty` | Run **1 - Build profile from CV** first. |
 | Lots of `[skip] ... not found` lines | Normal. These are company slugs or pages that didn't resolve. The run carries on without them. Fix or remove them in `config.py` when you have time. |
+| `Cost cap: scoring the 150 most promising of ...` | Normal, especially on your first run. The rest are scored on later runs. To score more per run, raise `MAX_LISTINGS_TO_SCORE` in `config.py`. |
+| `[warn] a scoring batch failed` (occasionally) | Normal if rare. Those 10 listings are retried on the next run. If every batch fails, check your Claude credit. |
 | `[warn] ... page was nearly empty` | That company's careers page loads its jobs with JavaScript, which this tool can't read. Remove it from `CAREER_PAGES` and check that company by hand. |
 | `Adzuna ...` errors | Usually a typo in the Adzuna secrets, or you've hit the free tier's usage limit. Fewer countries or keywords, or setting `INCLUDE_REMOTE_SEARCH = False`, means fewer Adzuna calls. |
 | Google Cloud won't let you create a key | Work or school Google accounts sometimes block this. Use a personal Gmail account for Setup, Step 3. |

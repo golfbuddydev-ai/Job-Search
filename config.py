@@ -74,6 +74,23 @@ RELEVANCE_KEYWORDS = SEARCH_KEYWORDS + [
 ]
 
 
+# Free filter on the JOB TITLE: a listing whose title contains any of these
+# words is dropped before any paid Claude call. Big companies post lots of
+# roles you'd never apply for (engineering, HR, finance...), and this stops
+# them eating your scoring budget. Matches whole words, so "intern" won't
+# catch "international".
+# The defaults suit commercial / marketing / sales roles. If you ARE an
+# engineer, designer, etc., delete those words -- or empty the list:
+#   EXCLUDE_TITLE_WORDS = []
+EXCLUDE_TITLE_WORDS = [
+    "engineer", "engineering", "developer", "software", "backend", "frontend",
+    "full stack", "devops", "sre", "qa", "data scientist", "machine learning",
+    "designer", "ux", "recruiter", "talent acquisition", "intern", "internship",
+    "accountant", "accounting", "payroll", "legal counsel", "paralegal",
+    "it support", "infrastructure",
+]
+
+
 # -----------------------------------------------------------------------
 # 4. HOW PICKY TO BE
 # -----------------------------------------------------------------------
@@ -90,8 +107,9 @@ RESULTS_PER_SOURCE = 20
 
 # HARD CAP on how many listings Claude scores in a single run. This is
 # your safety net on cost: however many listings the search finds, the
-# run never scores more than this. Listings already in your Matches tab
-# are skipped automatically and never re-scored.
+# run never scores more than this. The most promising listings (your
+# keywords in the job title) are scored first; the rest wait for the next
+# run. Anything already scored is never scored again.
 MAX_LISTINGS_TO_SCORE = 150
 
 
@@ -135,29 +153,20 @@ CV_BULLET_LABELS = True
 ATS_WATCHLIST = [
     # -- Ad tech platforms --
     ("The Trade Desk", "greenhouse", "thetradedesk"),
-    ("Criteo", "greenhouse", "criteo"),
     ("PubMatic", "greenhouse", "pubmatic"),
-    ("Integral Ad Science", "greenhouse", "integralads"),
     ("DoubleVerify", "greenhouse", "doubleverify"),
     ("InMobi", "greenhouse", "inmobi"),
     ("AppsFlyer", "greenhouse", "appsflyer"),
-    ("Adjust", "lever", "adjust"),
     ("Smartly.io", "greenhouse", "smartlyio"),
-    ("VIOOH", "greenhouse", "viooh"),
     # -- Martech / CRM --
     ("Klaviyo", "greenhouse", "klaviyo"),
     ("Braze", "greenhouse", "braze"),
-    ("HubSpot", "greenhouse", "hubspot"),
     ("Attentive", "greenhouse", "attentive"),
-    ("Semrush", "greenhouse", "semrush"),
     # -- Agencies / regional --
-    ("Wpromote", "greenhouse", "wpromote"),
-    ("Tinuiti", "greenhouse", "tinuiti"),
     ("Memac Ogilvy MENA", "greenhouse", "ogilvymena"),
     ("Pikasso", "smartrecruiters", "Pikasso"),
     ("Mobvista", "workable", "mobvista"),
     ("Mediacorp", "workable", "mediacorp"),
-    ("Hylink", "lever", "hylinkgroup"),
     ("GoTo (Gojek Ads)", "lever", "GoToGroup"),
 ]
 
@@ -189,7 +198,6 @@ CAREER_PAGES = [
     ("TIDAL Digital", "https://tidal.digital/about-us/jobs/"),
     ("Al Arabia Outdoor", "https://al-arabia.com/careers"),
     ("Hills Advertising", "https://hillsadvertising.com/jobs.php"),
-    ("Choueiri Group", "https://www.choueirigroup.com/career-opportunities"),
     ("Push MENA", "https://www.pushgroup.ae/careers"),
     ("Chain Reaction", "https://www.chainreaction.ae/careers/"),
     # -- Southeast Asia --
@@ -197,16 +205,13 @@ CAREER_PAGES = [
     ("CJ WORX", "https://www.cjworx.com/index.php/jobs/"),
     ("Hashmeta", "https://hashmeta.com/jobs/"),
     ("Krome", "https://www.krome.sg/careers/"),
-    ("Notion Age", "https://notionage.sg/about-our-agency/job-opportunities.html"),
     ("Primal", "https://www.primal.com.my/digital-marketing-jobs/"),
     ("Moving Walls", "https://www.movingwalls.com/careers/"),
     ("AlgoriX", "https://www.algorix.co/careers/"),
     ("VGI Global Media", "https://www.vgi.co.th/career/list-career/"),
     ("Big Tree Outdoor", "https://www.bigtree.com.my/careers/"),
     ("Plan B Media", "https://www.planbmedia.co.th/th/career/"),
-    ("Moove Media", "https://www.moovemedia.com.sg/careers/"),
     # -- China --
-    ("GIMC", "https://www.gimc.cn/career/"),
     ("Asiaray Media", "https://www.asiaray.com/en/job-opportunities/"),
     ("Nativex", "https://www.nativex.com/en/career"),
 ]

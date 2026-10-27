@@ -18,7 +18,6 @@ Always read the CV before you send it.
 """
 
 import os
-import json
 import datetime
 
 from anthropic import Anthropic
@@ -27,7 +26,7 @@ from docx.shared import Pt, Inches
 
 import config
 import sheets_helper
-from claude_helper import extract_text
+from claude_helper import ask_json
 
 PROFILE_HEADER = ["Section", "Content", "Last Updated", "Source"]
 APPLY_COL = "Apply?"
@@ -74,14 +73,7 @@ Respond with ONLY a JSON object, no other text, in this exact shape:
   "education": "..."
 }}"""
 
-    response = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=4000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": "Generate the tailored CV content."}],
-    )
-    raw = extract_text(response).replace("```json", "").replace("```", "").strip()
-    return json.loads(raw)
+    return ask_json(client, system_prompt, "Generate the tailored CV content.", max_tokens=6000)
 
 
 def _heading(doc, text):

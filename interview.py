@@ -12,14 +12,13 @@ unanswered questions, so they never pile up.
 """
 
 import os
-import json
 import datetime
 
 from anthropic import Anthropic
 
 import config
 import sheets_helper
-from claude_helper import extract_text
+from claude_helper import ask_json
 
 PROFILE_HEADER = ["Section", "Content", "Last Updated", "Source"]
 INTERVIEW_HEADER = ["Date Asked", "Question", "Answer", "Folded In"]
@@ -32,16 +31,9 @@ well-written addition to a professional master profile document. Use only what t
 answer says -- do not add or embellish. Respond with ONLY a JSON object, no other \
 text: {"section": "<short section label>", "content": "<clean write-up>"}"""
 
-    response = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=800,
-        system=system_prompt,
-        messages=[{"role": "user", "content": f"Q: {question}\nA: {answer}"}],
-    )
-    raw = extract_text(response).replace("```json", "").replace("```", "").strip()
     try:
-        return json.loads(raw)
-    except json.JSONDecodeError as e:
+        return ask_json(client, system_prompt, f"Q: {question}\nA: {answer}", max_tokens=2000)
+    except Exception as e:
         print(f"  [warn] Couldn't read Claude's summary ({e}). Will retry this answer next run.")
         return None
 
@@ -94,17 +86,10 @@ specific, not generic ("tell me about your experience" is too vague).
 
 Respond with ONLY a JSON array of strings, no other text."""
 
-    response = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=1500,
-        system=system_prompt,
-        messages=[{"role": "user", "content": "Generate the questions."}],
-    )
-    raw = extract_text(response).replace("```json", "").replace("```", "").strip()
     try:
-        questions = json.loads(raw)
+        questions = ask_json(client, system_prompt, "Generate the questions.", max_tokens=2000)
         return [q for q in questions if isinstance(q, str) and q.strip()]
-    except json.JSONDecodeError as e:
+    except Exception as e:
         print(f"  [warn] Couldn't read Claude's questions ({e}). Skipping this round.")
         return []
 

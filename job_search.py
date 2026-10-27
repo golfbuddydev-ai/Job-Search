@@ -13,9 +13,11 @@ Where it looks:
 
 How it keeps cost down, in order:
   1. Drops listings older than MAX_LISTING_AGE_DAYS        (free)
-  2. Drops listings with none of your RELEVANCE_KEYWORDS    (free)
+  2. Drops listings with none of your RELEVANCE_KEYWORDS,
+     or with an EXCLUDE_TITLE_WORDS word in the job title   (free)
   3. Drops anything it has already scored before            (free)
-  4. Scores at most MAX_LISTINGS_TO_SCORE listings          (paid, capped)
+  4. Scores at most MAX_LISTINGS_TO_SCORE listings, most
+     promising first                                        (paid, capped)
 Listings scoring MIN_FIT_SCORE or higher go to the Matches tab. Every
 listing scored, good or bad, is logged in the All Checked tab, so nothing
 is ever paid for twice -- and you can browse the near-misses there.
@@ -33,7 +35,7 @@ from anthropic import Anthropic
 
 import config
 import sheets_helper
-from claude_helper import extract_text
+from claude_helper import ask_json
 
 PROFILE_HEADER = ["Section", "Content", "Last Updated", "Source"]
 MATCHES_HEADER = [
@@ -129,7 +131,7 @@ def _parse_ats_response(ats, data):
             posted = ""
             if j.get("createdAt"):
                 try:
-                    posted = datetime.datetime.utcfromtimestamp(j["createdAt"] / 1000).isoformat()
+                    posted = datetime.datetime.fromtimestamp(j["createdAt"] / 1000, datetime.timezone.utc).isoformat()
                 except Exception:
                     posted = ""
             location = (j.get("categories") or {}).get("location", "") or ""
@@ -279,14 +281,7 @@ Respond with ONLY a JSON array, no other text:
 [{"title": "...", "location": "...", "link": "... or empty string if none found"}]"""
 
         try:
-            response = client.messages.create(
-                model=config.CLAUDE_MODEL,
-                max_tokens=1500,
-                system=system_prompt,
-                messages=[{"role": "user", "content": page_text}],
-            )
-            raw = extract_text(response).replace("```json", "").replace("```", "").strip()
-            jobs = json.loads(raw)
+            jobs = ask_json(client, system_prompt, page_text, max_tokens=3000)
         except Exception as e:
             print(f"  [warn] {company_name}: couldn't extract listings ({e})")
             continue
@@ -343,15 +338,44 @@ def filter_by_age(listings):
     return kept
 
 
+def _has_word(text, words):
+    """True if any of `words` appears in `text` as a whole word/phrase."""
+    text = f" {_norm(text)} "
+    return any(f" {_norm(w)} " in text for w in words if _norm(w))
+
+
 def filter_relevant(listings):
+    """Free filter: keep listings mentioning at least one RELEVANCE_KEYWORD,
+    and drop any whose job title contains an EXCLUDE_TITLE_WORDS word."""
     keywords = [kw.lower() for kw in config.RELEVANCE_KEYWORDS]
-    kept = [
-        l for l in listings
-        if any(kw in f"{l.get('title', '')} {l.get('description', '')}".lower() for kw in keywords)
-    ]
-    if len(kept) < len(listings):
-        print(f"  Keyword filter: dropped {len(listings) - len(kept)} clearly unrelated listings.")
+    exclude = getattr(config, "EXCLUDE_TITLE_WORDS", [])
+    kept, excluded = [], 0
+    for l in listings:
+        if exclude and _has_word(l.get("title", ""), exclude):
+            excluded += 1
+            continue
+        if any(kw in f"{l.get('title', '')} {l.get('description', '')}".lower() for kw in keywords):
+            kept.append(l)
+    if excluded:
+        print(f"  Title filter: dropped {excluded} with excluded words in the job title.")
+    unrelated = len(listings) - len(kept) - excluded
+    if unrelated:
+        print(f"  Keyword filter: dropped {unrelated} clearly unrelated listings.")
     return kept
+
+
+def prioritise(listings):
+    """Put the most promising listings first, so if the cost cap kicks in
+    it's the weakest ones that wait until next run. Free -- no Claude call.
+    Order: your SEARCH_KEYWORDS in the title, then RELEVANCE_KEYWORDS in
+    the title, then everything else (original order kept within each)."""
+    def rank(l):
+        title = l.get("title", "")
+        return (
+            -sum(1 for kw in config.SEARCH_KEYWORDS if _has_word(title, [kw])),
+            -sum(1 for kw in config.RELEVANCE_KEYWORDS if _has_word(title, [kw])),
+        )
+    return sorted(listings, key=rank)
 
 
 def _norm(text):
@@ -412,17 +436,10 @@ def score_listings(client, profile, listings):
 Score each numbered job listing below for fit against this candidate's actual \
 experience, on a scale of 1-10. Be honest -- most listings should NOT score highly. \
 Respond with ONLY a JSON array, no other text:
-[{{"index": <int>, "fit_score": <int 1-10>, "why_it_fits": "<1 sentence, or why it doesn't if scoring low>"}}]"""
+[{{"index": <int>, "fit_score": <int 1-10>, "why_it_fits": "<one short sentence, under 25 words, no double quotes>"}}]"""
 
         try:
-            response = client.messages.create(
-                model=config.CLAUDE_MODEL,
-                max_tokens=1500,
-                system=system_prompt,
-                messages=[{"role": "user", "content": listing_text}],
-            )
-            raw = extract_text(response).replace("```json", "").replace("```", "").strip()
-            results = json.loads(raw)
+            results = ask_json(client, system_prompt, listing_text, max_tokens=4000)
         except Exception as e:
             print(f"  [warn] a scoring batch failed ({e}) -- those listings will be retried next run.")
             continue
@@ -492,9 +509,11 @@ def main():
 
     all_listings = remove_duplicates(all_listings, already_scored)
 
+    all_listings = prioritise(all_listings)
     if len(all_listings) > config.MAX_LISTINGS_TO_SCORE:
-        print(f"  Cost cap: scoring the first {config.MAX_LISTINGS_TO_SCORE} of {len(all_listings)} "
-              f"(raise MAX_LISTINGS_TO_SCORE in config.py to score more).")
+        print(f"  Cost cap: scoring the {config.MAX_LISTINGS_TO_SCORE} most promising of "
+              f"{len(all_listings)}. The rest wait for the next run (or raise MAX_LISTINGS_TO_SCORE "
+              f"in config.py).")
         all_listings = all_listings[:config.MAX_LISTINGS_TO_SCORE]
 
     print(f"Scoring {len(all_listings)} new listing(s) against your profile...")
