@@ -2,7 +2,7 @@
 
 A free, open-source job search assistant that runs on your own GitHub and Google accounts.
 
-I built this for my own job search and I'm giving it away. A lot of good people in ad tech and media are looking for work right now, and if this saves you a few hours a week, that's the point.
+I built this to give something back to the industry. A lot of good people in ad tech and media are looking for work right now. If this saves you a few hours a week and helps you land your next role, it's done its job.
 
 ## What it does
 
