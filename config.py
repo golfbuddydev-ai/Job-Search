@@ -210,7 +210,6 @@ CAREER_PAGES = [
     ("AlgoriX", "https://www.algorix.co/careers/"),
     ("VGI Global Media", "https://www.vgi.co.th/career/list-career/"),
     ("Big Tree Outdoor", "https://www.bigtree.com.my/careers/"),
-    ("Plan B Media", "https://www.planbmedia.co.th/th/career/"),
     # -- China --
     ("Asiaray Media", "https://www.asiaray.com/en/job-opportunities/"),
     ("Nativex", "https://www.nativex.com/en/career"),
